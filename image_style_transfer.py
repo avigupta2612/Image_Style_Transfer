@@ -14,6 +14,8 @@ import torch
 from torchvision import models, transforms
 from io import BytesIO
 
+"""## Loading VGG19 model features"""
+
 vgg= models.vgg19(pretrained=True).features
 print(vgg)
 
@@ -23,6 +25,8 @@ for param in vgg.parameters():
 train_on_gpu= torch.cuda.is_available()
 if train_on_gpu:
     vgg.cuda()
+
+"""## Loading Content and Style images"""
 
 def load_img(img_path, max_size=400, shape=None):
     image= Image.open(img_path).convert('RGB')
@@ -40,8 +44,8 @@ def load_img(img_path, max_size=400, shape=None):
     print(image.shape)
     return image
 
-content= load_img('/content/new_york_day.jpg').to('cuda')
-style= load_img('/content/hongkong_night.jpg', shape= content.shape[-2:]).to('cuda')
+content= load_img('/content/magritte.jpg').to('cuda')
+style= load_img('/content/delaunay.jpg', shape= content.shape[-2:]).to('cuda')
 
 def convert_img(image):
     image= image.to('cpu').clone().detach()
@@ -57,6 +61,8 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
 # content and style ims side-by-side
 ax1.imshow(convert_img(content))
 ax2.imshow(convert_img(style))
+
+"""__Extracting features from different layers of VGG19__"""
 
 def get_features(image, model, layers=None):
     if layers is None:
@@ -82,72 +88,57 @@ def gram_matrix(tensor):
     
     return gram
 
-# get content and style features only once before forming the target image
 content_features = get_features(content, vgg)
 style_features = get_features(style, vgg)
-
-# calculate the gram matrices for each layer of our style representation
 style_grams = {layer: gram_matrix(style_features[layer]) for layer in style_features}
 
-# create a third "target" image and prep it for change
-# it is a good idea to start off with the target as a copy of our *content* image
-# then iteratively change its style
 target = content.clone().requires_grad_(True).to("cuda")
 
 style_weights= {'conv1_1': 1.,
-                'conv2_1': 0.8,
+                'conv2_1': 0.7,
                 'conv3_1': 0.3,
                 'conv4_1': 0.2,
                 'conv5_1':0.1}
 content_weight= 1
 style_weight= 1e5
 
+"""## Training Model"""
+
 import torch.optim as optim
 
-# for displaying the target image, intermittently
-show_every = 400
+"""```
+Total loss= (style weight*style loss) + (content weight* content loss)
+```
+"""
 
-# iteration hyperparameters
+show_every = 400
 optimizer = optim.Adam([target], lr=0.003)
-steps = 2000  # decide how many iterations to update your image (5000)
+steps = 2000 
 
 for ii in range(1, steps+1):
-    
-    # get the features from your target image
     target_features = get_features(target, vgg)
     
     # the content loss
     content_loss = torch.mean((target_features['conv4_2'] - content_features['conv4_2'])**2)
-    
-    # the style loss
-    # initialize the style loss to 0
     style_loss = 0
-    # then add to it for each layer's gram matrix loss
     for layer in style_weights:
         # get the "target" style representation for the layer
         target_feature = target_features[layer]
         target_gram = gram_matrix(target_feature)
         _, d, h, w = target_feature.shape
-        # get the "style" style representation
         style_gram = style_grams[layer]
-        # the style loss for one layer, weighted appropriately
         layer_style_loss = style_weights[layer] * torch.mean((target_gram - style_gram)**2)
-        # add to the style loss
         style_loss += layer_style_loss / (d * h * w)
-        
-    # calculate the *total* loss
     total_loss = content_weight * content_loss + style_weight * style_loss
-    
-    # update your target image
     optimizer.zero_grad()
     total_loss.backward()
     optimizer.step()
-    
-    # display intermediate images and print the loss
     if  ii % show_every == 0:
         print('Total loss: ', total_loss.item())
         plt.imshow(convert_img(target))
         plt.show()
+
+"""## Visualizing images"""
 
 # display content and final, target image
 fig, (ax1, ax2,ax3) = plt.subplots(1, 3, figsize=(20, 10))
@@ -156,4 +147,4 @@ ax2.imshow(convert_img(style))
 ax3.imshow(convert_img(target))
 
 plt.imshow(convert_img(target))
-plt.savefig('new_york_colorised.png', dpi=300, bbox_inches='tight')
+plt.savefig('magritte_stylised.jpg', dpi=300, bbox_inches='tight')
