@@ -5,9 +5,8 @@ Transfer style of one image to another using CNN.
 
 ## Example
 <p float="left">
-  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/magritte.jpg" title="Content Image" width="100" />
-  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/delaunay.jpg" title="Style Image" width="100" /> 
-  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/magritte_stylised.png" title="Stylized Image" width="100" />
-  <figcaption>Content Image Style Image Stylized Image</figcaption>
+  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/magritte.jpg" title="Content Image" width="300" height="400" />
+  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/delaunay.jpg" title="Style Image" width="300" height="400"/> 
+  <img src="https://github.com/avigupta2612/Image_Style_Transfer/blob/master/Images/magritte_stylised.png" title="Stylized Image" width="300" height="400"/>
 </p>
 
